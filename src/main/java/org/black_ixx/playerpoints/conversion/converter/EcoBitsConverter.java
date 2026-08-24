@@ -3,27 +3,24 @@ package org.black_ixx.playerpoints.conversion.converter;
 import com.willfp.eco.core.Eco;
 import com.willfp.eco.core.data.PlayerProfile;
 import com.willfp.eco.core.data.ProfileExtensions;
-import com.willfp.eco.core.data.ServerProfile;
 import com.willfp.eco.core.data.keys.PersistentDataKey;
 import com.willfp.eco.core.data.keys.PersistentDataKeyType;
 import com.willfp.eco.util.NamespacedKeyUtils;
-import com.willfp.eco.util.PlayerUtils;
-import com.willfp.ecobits.EcoBitsPlugin;
 import com.willfp.ecobits.currencies.Currencies;
 import com.willfp.ecobits.currencies.Currency;
 import dev.rosewood.rosegarden.RosePlugin;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import org.black_ixx.playerpoints.conversion.CurrencyConverter;
 import org.black_ixx.playerpoints.manager.DataManager;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 public class EcoBitsConverter extends CurrencyConverter {
 
@@ -91,11 +88,12 @@ public class EcoBitsConverter extends CurrencyConverter {
             }
 
             DataManager dataManager = this.rosePlugin.getManager(DataManager.class);
-            dataManager.importData(players, usernameMap);
+            requireImportSucceeded(dataManager.importDataWithResult(
+                    players, usernameMap, Collections.emptyList()));
 
             this.rosePlugin.getLogger().warning(String.format("Successfully converted %d entries!", count));
         } catch (ReflectiveOperationException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to read EcoBits data", e);
         }
     }
 

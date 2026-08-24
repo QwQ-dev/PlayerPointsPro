@@ -10,6 +10,9 @@ import org.black_ixx.playerpoints.commands.arguments.StringSuggestingArgumentHan
 import org.black_ixx.playerpoints.util.PointsUtils;
 import org.bukkit.command.CommandSender;
 
+import java.util.UUID;
+import java.util.logging.Level;
+
 public class ResetCommand extends BasePointsCommand {
 
     public ResetCommand(PlayerPoints playerPoints) {
@@ -29,13 +32,45 @@ public class ResetCommand extends BasePointsCommand {
                 return;
             }
 
-            if (this.api.reset(player.getFirst(), PointsUtils.getSenderUUID(sender))) {
-                this.localeManager.sendCommandMessage(sender, "command-reset-success", StringPlaceholders.builder("player", player.getSecond())
-                        .add("balance", PointsUtils.formatPoints(this.api.look(player.getFirst())))
-                        .add("currency", this.localeManager.getCurrencyName(0))
-                        .build());
-            }
+            UUID targetId = player.getFirst();
+            UUID senderId = PointsUtils.getSenderUUID(sender);
+            String targetName = player.getSecond();
+            this.rosePlugin.getScheduler().runTaskAsync(() -> {
+                boolean reset;
+                try {
+                    reset = this.resetPoints(targetId, senderId);
+                } catch (RuntimeException failure) {
+                    this.rosePlugin.getLogger().log(Level.WARNING,
+                            "Failed to reset PlayerPoints for " + targetId, failure);
+                    this.rosePlugin.getScheduler().runTask(() ->
+                            this.localeManager.sendCommandMessage(
+                                    sender, "command-points-update-failure"));
+                    return;
+                }
+                String balance = reset ? this.lookFormattedOrUnknown(targetId) : "?";
+                this.rosePlugin.getScheduler().runTask(() -> {
+                    if (!reset) {
+                        this.localeManager.sendCommandMessage(
+                                sender, "command-points-update-failure");
+                        return;
+                    }
+
+                    this.localeManager.sendCommandMessage(sender, this.getSuccessMessageKey(),
+                            StringPlaceholders.builder("player", targetName)
+                                    .add("balance", balance)
+                                    .add("currency", this.localeManager.getCurrencyName(0))
+                                    .build());
+                });
+            });
         });
+    }
+
+    protected boolean resetPoints(UUID playerId, UUID sourceId) {
+        return this.api.reset(playerId, sourceId);
+    }
+
+    protected String getSuccessMessageKey() {
+        return "command-reset-success";
     }
 
     @Override

@@ -9,11 +9,12 @@ import dev.rosewood.rosegarden.command.framework.CommandContext;
 import dev.rosewood.rosegarden.command.framework.CommandInfo;
 import dev.rosewood.rosegarden.command.framework.RoseCommand;
 import dev.rosewood.rosegarden.command.framework.annotation.RoseExecutable;
-import java.util.Optional;
 import org.black_ixx.playerpoints.PlayerPoints;
 import org.black_ixx.playerpoints.config.SettingKey;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+
+import java.util.Optional;
 
 public class BaseCommand extends PrimaryCommand {
 
@@ -61,6 +62,7 @@ public class BaseCommand extends PrimaryCommand {
                                 new ExportCommand(this.playerPoints),
                                 new GiveAllCommand(this.playerPoints),
                                 new GiveCommand(this.playerPoints),
+                                new GiveTemporaryCommand(this.playerPoints),
                                 new HelpCommand(this.playerPoints, this),
                                 new ImportCommand(this.playerPoints),
                                 new ImportLegacyCommand(this.playerPoints),
@@ -70,8 +72,14 @@ public class BaseCommand extends PrimaryCommand {
                                 new PayCommand(this.playerPoints),
                                 new ReloadCommand(this.playerPoints),
                                 new ResetCommand(this.playerPoints),
+                                new ResetPermanentCommand(this.playerPoints),
+                                new ResetTemporaryCommand(this.playerPoints),
                                 new SetCommand(this.playerPoints),
+                                new SetPermanentCommand(this.playerPoints),
+                                new SetTemporaryCommand(this.playerPoints),
                                 new TakeCommand(this.playerPoints),
+                                new TakePermanentCommand(this.playerPoints),
+                                new TakeTemporaryCommand(this.playerPoints),
                                 new VersionCommand(this.playerPoints)
                         ))
                 .build();

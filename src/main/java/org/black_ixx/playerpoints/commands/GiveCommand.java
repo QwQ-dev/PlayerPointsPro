@@ -13,6 +13,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.UUID;
+import java.util.logging.Level;
+
 public class GiveCommand extends BasePointsCommand {
 
     public GiveCommand(PlayerPoints playerPoints) {
@@ -37,30 +40,58 @@ public class GiveCommand extends BasePointsCommand {
                 return;
             }
 
-            if (this.api.give(player.getFirst(), PointsUtils.getSenderUUID(sender), amount) && silentFlag == null) {
-                int balance = this.api.look(player.getFirst());
-                // Send message to receiver
-                Player onlinePlayer = Bukkit.getPlayer(player.getFirst());
-                if (onlinePlayer != null) {
-                    this.localeManager.sendCommandMessage(onlinePlayer, "command-give-received", StringPlaceholders.builder("amount", PointsUtils.formatPoints(amount))
-                            .add("balance", PointsUtils.formatPoints(balance))
-                            .add("currency", this.localeManager.getCurrencyName(amount))
-                            .build());
+            UUID targetId = player.getFirst();
+            UUID senderId = PointsUtils.getSenderUUID(sender);
+            String targetName = player.getSecond();
+            this.rosePlugin.getScheduler().runTaskAsync(() -> {
+                boolean given;
+                try {
+                    given = this.api.give(targetId, senderId, amount);
+                } catch (RuntimeException failure) {
+                    this.rosePlugin.getLogger().log(Level.WARNING,
+                            "Failed to give PlayerPoints to " + targetId, failure);
+                    if (silentFlag == null) {
+                        this.rosePlugin.getScheduler().runTask(() ->
+                                this.localeManager.sendCommandMessage(
+                                        sender, "command-points-update-failure"));
+                    }
+                    return;
                 }
+                if (silentFlag != null)
+                    return;
 
-                // Send message to sender
-                this.localeManager.sendCommandMessage(sender, "command-give-success", StringPlaceholders.builder("amount", PointsUtils.formatPoints(amount))
-                        .add("balance", PointsUtils.formatPoints(balance))
-                        .add("currency", this.localeManager.getCurrencyName(amount))
-                        .add("player", player.getSecond())
-                        .build());
-            }
+                String balance = given ? this.lookFormattedOrUnknown(targetId) : "?";
+                this.rosePlugin.getScheduler().runTask(() -> {
+                    if (!given) {
+                        this.localeManager.sendCommandMessage(
+                                sender, "command-points-update-failure");
+                        return;
+                    }
+
+                    Player onlinePlayer = Bukkit.getPlayer(targetId);
+                    if (onlinePlayer != null) {
+                        this.localeManager.sendCommandMessage(onlinePlayer, "command-give-received",
+                                StringPlaceholders.builder("amount", PointsUtils.formatPoints(amount))
+                                        .add("balance", balance)
+                                        .add("currency", this.localeManager.getCurrencyName(amount))
+                                        .build());
+                    }
+
+                    this.localeManager.sendCommandMessage(sender, "command-give-success",
+                            StringPlaceholders.builder("amount", PointsUtils.formatPoints(amount))
+                                    .add("balance", balance)
+                                    .add("currency", this.localeManager.getCurrencyName(amount))
+                                    .add("player", targetName)
+                                    .build());
+                });
+            });
         });
     }
 
     @Override
     protected CommandInfo createCommandInfo() {
         return CommandInfo.builder("give")
+                .aliases("give-permanent", "giveperm")
                 .descriptionKey("command-give-description")
                 .permission("playerpoints.give")
                 .arguments(ArgumentsDefinition.builder()

@@ -11,6 +11,9 @@ import org.black_ixx.playerpoints.commands.arguments.StringSuggestingArgumentHan
 import org.black_ixx.playerpoints.util.PointsUtils;
 import org.bukkit.command.CommandSender;
 
+import java.util.UUID;
+import java.util.logging.Level;
+
 public class SetCommand extends BasePointsCommand {
 
     public SetCommand(PlayerPoints playerPoints) {
@@ -35,15 +38,56 @@ public class SetCommand extends BasePointsCommand {
                 return;
             }
 
-            // Try to set the points for the player
-            if (this.api.set(player.getFirst(), PointsUtils.getSenderUUID(sender), amount) && silentFlag == null) {
-                this.localeManager.sendCommandMessage(sender, "command-set-success", StringPlaceholders.builder("player", player.getSecond())
-                        .add("balance", PointsUtils.formatPoints(this.api.look(player.getFirst())))
-                        .add("currency", this.localeManager.getCurrencyName(amount))
-                        .add("amount", PointsUtils.formatPoints(amount))
-                        .build());
-            }
+            UUID targetId = player.getFirst();
+            UUID senderId = PointsUtils.getSenderUUID(sender);
+            String targetName = player.getSecond();
+            this.rosePlugin.getScheduler().runTaskAsync(() -> {
+                boolean updated;
+                try {
+                    updated = this.setPoints(targetId, senderId, amount);
+                } catch (RuntimeException failure) {
+                    this.rosePlugin.getLogger().log(Level.WARNING,
+                            "Failed to set PlayerPoints for " + targetId, failure);
+                    if (silentFlag == null) {
+                        this.rosePlugin.getScheduler().runTask(() ->
+                                this.localeManager.sendCommandMessage(
+                                        sender, "command-points-update-failure"));
+                    }
+                    return;
+                }
+                if (silentFlag != null)
+                    return;
+
+                int appliedAmount = updated ? this.getSetAmount(targetId) : amount;
+                String balance = updated ? this.lookFormattedOrUnknown(targetId) : "?";
+                this.rosePlugin.getScheduler().runTask(() -> {
+                    if (!updated) {
+                        this.localeManager.sendCommandMessage(
+                                sender, "command-points-update-failure");
+                        return;
+                    }
+
+                    this.localeManager.sendCommandMessage(sender, this.getSuccessMessageKey(),
+                            StringPlaceholders.builder("player", targetName)
+                                    .add("balance", balance)
+                                    .add("currency", this.localeManager.getCurrencyName(appliedAmount))
+                                    .add("amount", PointsUtils.formatPoints(appliedAmount))
+                                    .build());
+                });
+            });
         });
+    }
+
+    protected boolean setPoints(UUID playerId, UUID sourceId, int amount) {
+        return this.api.set(playerId, sourceId, amount);
+    }
+
+    protected int getSetAmount(UUID playerId) {
+        return this.api.look(playerId);
+    }
+
+    protected String getSuccessMessageKey() {
+        return "command-set-success";
     }
 
     @Override

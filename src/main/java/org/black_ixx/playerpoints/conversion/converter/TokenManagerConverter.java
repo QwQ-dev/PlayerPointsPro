@@ -1,19 +1,17 @@
 package org.black_ixx.playerpoints.conversion.converter;
 
 import dev.rosewood.rosegarden.RosePlugin;
-import java.lang.reflect.Field;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.UUID;
 import me.realized.tokenmanager.TokenManagerPlugin;
 import me.realized.tokenmanager.data.DataManager;
 import me.realized.tokenmanager.data.database.Database;
 import org.black_ixx.playerpoints.conversion.CurrencyConverter;
-import org.black_ixx.playerpoints.models.SortedPlayer;
 import org.bukkit.Bukkit;
+
+import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class TokenManagerConverter extends CurrencyConverter {
 
@@ -70,11 +68,15 @@ public class TokenManagerConverter extends CurrencyConverter {
                     }
                 }
 
-                this.rosePlugin.getManager(org.black_ixx.playerpoints.manager.DataManager.class).importData(pointsData, usernameMap);
+                org.black_ixx.playerpoints.manager.DataManager playerPointsData =
+                        this.rosePlugin.getManager(
+                                org.black_ixx.playerpoints.manager.DataManager.class);
+                requireImportSucceeded(playerPointsData.importDataWithResult(
+                        pointsData, usernameMap, Collections.emptyList()));
                 this.rosePlugin.getLogger().warning(String.format("Successfully converted %d entries!", count));
             });
         } catch (ReflectiveOperationException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to read TokenManager data", e);
         }
     }
 

@@ -13,6 +13,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.OptionalInt;
+import java.util.UUID;
+import java.util.logging.Level;
+
 public class TakeCommand extends BasePointsCommand {
 
     public TakeCommand(PlayerPoints playerPoints) {
@@ -37,30 +41,80 @@ public class TakeCommand extends BasePointsCommand {
                 return;
             }
 
-            // Try to take points from the player
-            if (this.api.take(player.getFirst(), PointsUtils.getSenderUUID(sender), amount) && silentFlag == null) {
-                // Send success to taker
-                this.localeManager.sendCommandMessage(sender, "command-take-success", StringPlaceholders.builder("player", player.getSecond())
-                        .add("balance", PointsUtils.formatPoints(this.api.look(player.getFirst())))
-                        .add("currency", this.localeManager.getCurrencyName(amount))
-                        .add("amount", PointsUtils.formatPoints(amount))
-                        .build());
-
-                Player onlinePlayer = Bukkit.getPlayer(player.getFirst());
-                if (onlinePlayer != null) {
-                    // Send success to player
-                    this.localeManager.sendCommandMessage(onlinePlayer, "command-take-taken", StringPlaceholders.builder("player", player.getSecond())
-                            .add("balance", PointsUtils.formatPoints(this.api.look(player.getFirst())))
-                            .add("currency", this.localeManager.getCurrencyName(amount))
-                            .add("amount", PointsUtils.formatPoints(amount))
-                            .build());
+            UUID targetId = player.getFirst();
+            UUID senderId = PointsUtils.getSenderUUID(sender);
+            String targetName = player.getSecond();
+            this.rosePlugin.getScheduler().runTaskAsync(() -> {
+                int availablePoints;
+                OptionalInt takenAmount;
+                try {
+                    availablePoints = this.getAvailablePoints(targetId);
+                    takenAmount = this.takePoints(targetId, senderId, amount);
+                } catch (RuntimeException failure) {
+                    this.rosePlugin.getLogger().log(Level.WARNING,
+                            "Failed to take PlayerPoints", failure);
+                    if (silentFlag == null) {
+                        this.rosePlugin.getScheduler().runTask(() ->
+                                this.localeManager.sendCommandMessage(
+                                        sender, "command-points-update-failure"));
+                    }
+                    return;
                 }
-            } else if (silentFlag == null) {
-                this.localeManager.sendCommandMessage(sender, "command-take-not-enough", StringPlaceholders.builder("player", player.getSecond())
-                        .add("currency", this.localeManager.getCurrencyName(amount))
-                        .build());
-            }
+
+                if (silentFlag != null)
+                    return;
+
+                boolean taken = takenAmount.isPresent();
+                int appliedAmount = taken ? takenAmount.getAsInt() : amount;
+                String balance = taken ? this.lookFormattedOrUnknown(targetId) : "?";
+                this.rosePlugin.getScheduler().runTask(() -> {
+                    if (!taken) {
+                        if (availablePoints < amount) {
+                            this.localeManager.sendCommandMessage(sender,
+                                    this.getNotEnoughMessageKey(),
+                                    StringPlaceholders.builder("player", targetName)
+                                            .add("currency", this.localeManager.getCurrencyName(amount))
+                                            .build());
+                        } else {
+                            this.localeManager.sendCommandMessage(
+                                    sender, "command-points-update-failure");
+                        }
+                        return;
+                    }
+
+                    StringPlaceholders placeholders = StringPlaceholders.builder(
+                                    "player", targetName)
+                            .add("balance", balance)
+                            .add("currency", this.localeManager.getCurrencyName(appliedAmount))
+                            .add("amount", PointsUtils.formatPoints(appliedAmount))
+                            .build();
+                    this.localeManager.sendCommandMessage(
+                            sender, this.getSuccessMessageKey(), placeholders);
+
+                    Player onlinePlayer = Bukkit.getPlayer(targetId);
+                    if (onlinePlayer != null) {
+                        this.localeManager.sendCommandMessage(
+                                onlinePlayer, "command-take-taken", placeholders);
+                    }
+                });
+            });
         });
+    }
+
+    protected int getAvailablePoints(UUID playerId) {
+        return this.api.look(playerId);
+    }
+
+    protected OptionalInt takePoints(UUID playerId, UUID sourceId, int amount) {
+        return this.api.takeAndGetAmount(playerId, sourceId, amount);
+    }
+
+    protected String getSuccessMessageKey() {
+        return "command-take-success";
+    }
+
+    protected String getNotEnoughMessageKey() {
+        return "command-take-not-enough";
     }
 
     @Override

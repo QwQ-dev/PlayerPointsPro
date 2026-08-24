@@ -7,6 +7,7 @@ import dev.rosewood.rosegarden.command.framework.annotation.RoseExecutable;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
 import org.black_ixx.playerpoints.PlayerPoints;
 import org.black_ixx.playerpoints.commands.arguments.StringSuggestingArgumentHandler;
+import org.black_ixx.playerpoints.models.DetailedPointsBalance;
 import org.black_ixx.playerpoints.util.PointsUtils;
 import org.bukkit.command.CommandSender;
 
@@ -29,11 +30,16 @@ public class LookCommand extends BasePointsCommand {
                 return;
             }
 
-            int amount = this.api.look(player.getFirst());
-            this.localeManager.sendCommandMessage(sender, "command-look-success", StringPlaceholders.builder("player", player.getSecond())
-                    .add("amount", PointsUtils.formatPoints(amount))
-                    .add("currency", this.localeManager.getCurrencyName(amount))
-                    .build());
+            DetailedPointsBalance balance = this.api.lookDetailed(player.getFirst());
+            int amount = balance.getTotal();
+            this.localeManager.sendCommandMessage(sender, "command-look-success",
+                    StringPlaceholders.builder("player", player.getSecond())
+                            .add("amount", PointsUtils.formatPoints(amount))
+                            .add("permanent", PointsUtils.formatPoints(balance.getPermanent()))
+                            .add("temporary", PointsUtils.formatPoints(balance.getTemporary()))
+                            .add("currency", this.localeManager.getCurrencyName(amount))
+                            .build());
+            this.sendBalanceDetails(sender, balance);
         });
     }
 

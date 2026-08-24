@@ -4,63 +4,78 @@ import dev.rosewood.rosegarden.database.DataMigration;
 import dev.rosewood.rosegarden.database.DatabaseConnector;
 import dev.rosewood.rosegarden.database.MySQLConnector;
 import dev.rosewood.rosegarden.database.SQLiteConnector;
-import java.io.File;
+
 import java.sql.Connection;
-import java.sql.PreparedStatement;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.UUID;
-import org.black_ixx.playerpoints.PlayerPoints;
-import org.black_ixx.playerpoints.manager.DataManager;
-import org.black_ixx.playerpoints.models.SortedPlayer;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
+import java.util.Locale;
 
-/**
- * Creates the database tables
- */
 public class _1_Create_Tables extends DataMigration {
 
+    private final String activePointsTable;
+    private final String activeAccountColumn;
+    private final LegacyDataImportState legacyImportState;
+
     public _1_Create_Tables() {
+        this(null, null, null);
+    }
+
+    public _1_Create_Tables(LegacyDataImportState legacyImportState) {
+        this(null, null, legacyImportState);
+    }
+
+    public _1_Create_Tables(String activePointsTable, String activeAccountColumn,
+                            LegacyDataImportState legacyImportState) {
         super(1);
+        this.activePointsTable = activePointsTable;
+        this.activeAccountColumn = activeAccountColumn;
+        this.legacyImportState = legacyImportState;
     }
 
     @Override
     public void migrate(DatabaseConnector connector, Connection connection, String tablePrefix) throws SQLException {
-        String autoIncrement = connector instanceof MySQLConnector ? " AUTO_INCREMENT" : "";
-
-        String query;
-        if (connector instanceof SQLiteConnector) {
-            query = "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?";
-        } else {
-            query = "SHOW TABLES LIKE ?";
+        if (this.activePointsTable != null && this.activePointsTable.indexOf('.') >= 0) {
+            throw new SQLException("Schema-qualified points table names are not supported: "
+                    + this.activePointsTable);
         }
 
-        // Check if the old table already exists, if it does then try renaming the table to playerpoints_points and the 'playername' column to 'uuid'
-        boolean exists;
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, "playerpoints");
-            exists = statement.executeQuery().next();
+        String databaseProduct = connection.getMetaData().getDatabaseProductName();
+        boolean sqlite = connector instanceof SQLiteConnector
+                || databaseProduct.toLowerCase(Locale.ROOT).contains("sqlite");
+        boolean mysql = connector instanceof MySQLConnector
+                || databaseProduct.toLowerCase(Locale.ROOT).contains("mysql")
+                || databaseProduct.toLowerCase(Locale.ROOT).contains("mariadb");
+        String autoIncrement = mysql ? " AUTO_INCREMENT" : "";
+
+        boolean managesStandardTable = this.activePointsTable == null
+                || (this.activePointsTable.equals(tablePrefix + "points")
+                && "uuid".equalsIgnoreCase(this.activeAccountColumn));
+        if (!managesStandardTable) {
+            if (sqlite && this.legacyImportState != null)
+                this.legacyImportState.markMigrationOneRan();
+            return;
         }
 
-        if (exists) {
-            try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate("ALTER TABLE playerpoints RENAME TO " + tablePrefix + "points");
-            } catch (Exception ignored) { }
+        String pointsTable = tablePrefix + "points";
+        boolean oldTableExists = this.tableExists(connection, "playerpoints");
+        boolean pointsTableExists = this.tableExists(connection, pointsTable);
+        if (oldTableExists && pointsTableExists) {
+            throw new SQLException("Both playerpoints and " + pointsTable
+                    + " exist; refusing to guess which points table is authoritative");
+        }
 
+        if (oldTableExists) {
             try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate("ALTER TABLE " + tablePrefix + "points RENAME COLUMN playername TO uuid");
-            } catch (Exception ignored) { }
-        } else {
-            // Create points table
+                statement.executeUpdate("ALTER TABLE playerpoints RENAME TO " + pointsTable);
+            }
+            pointsTableExists = true;
+        }
+
+        if (!pointsTableExists) {
             try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate("CREATE TABLE " + tablePrefix + "points (" +
+                statement.executeUpdate("CREATE TABLE " + pointsTable + " (" +
                         "id INTEGER PRIMARY KEY" + autoIncrement + ", " +
                         "uuid VARCHAR(36) NOT NULL, " +
                         "points INTEGER NOT NULL, " +
@@ -69,33 +84,60 @@ public class _1_Create_Tables extends DataMigration {
             }
         }
 
-        // Attempt to import legacy data if it exists and we are using SQLite
-        // First make sure there isn't already any data in the database for some reason
-        PlayerPoints plugin = PlayerPoints.getInstance();
-        DataManager dataManager = plugin.getManager(DataManager.class);
-        File file = new File(plugin.getDataFolder(), "storage.yml");
-        if (!dataManager.doesDataExist() && file.exists() && connector instanceof SQLiteConnector) {
-            try {
-                FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
-                ConfigurationSection section = configuration.getConfigurationSection("Points");
-                if (section == null)
-                    section = configuration.getConfigurationSection("Players");
+        boolean hasUuid = this.columnExists(connection, pointsTable, "uuid");
+        boolean hasPlayerName = this.columnExists(connection, pointsTable, "playername");
+        if (hasUuid && hasPlayerName) {
+            throw new SQLException("Points table contains both uuid and playername columns: " + pointsTable);
+        }
+        if (!hasUuid && hasPlayerName) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate("ALTER TABLE " + pointsTable + " RENAME COLUMN playername TO uuid");
+            }
+            hasUuid = true;
+        }
+        if (!hasUuid)
+            throw new SQLException("Points table is missing its uuid column: " + pointsTable);
 
-                if (section == null) {
-                    plugin.getLogger().warning("Malformed storage.yml file.");
-                    return;
-                }
+        if (sqlite && this.legacyImportState != null)
+            this.legacyImportState.markMigrationOneRan();
+    }
 
-                Map<UUID, Integer> data = new HashMap<>();
-                for (String uuid : section.getKeys(false))
-                    data.put(UUID.fromString(uuid), section.getInt(uuid));
-
-                plugin.getManager(DataManager.class).importData(data, Collections.emptyMap());
-                plugin.getLogger().warning("Imported legacy data from storage.yml");
-            } catch (Exception e) {
-                e.printStackTrace();
+    private boolean tableExists(Connection connection, String tableName) throws SQLException {
+        DatabaseMetaData metadata = connection.getMetaData();
+        String pattern = this.escapePattern(tableName, metadata.getSearchStringEscape());
+        try (ResultSet tables = metadata.getTables(
+                connection.getCatalog(), null, pattern, new String[]{"TABLE"})) {
+            while (tables.next()) {
+                if (tableName.equalsIgnoreCase(tables.getString("TABLE_NAME")))
+                    return true;
             }
         }
+        return false;
+    }
+
+    private boolean columnExists(Connection connection, String tableName,
+                                 String columnName) throws SQLException {
+        DatabaseMetaData metadata = connection.getMetaData();
+        String tablePattern = this.escapePattern(tableName, metadata.getSearchStringEscape());
+        String columnPattern = this.escapePattern(columnName, metadata.getSearchStringEscape());
+        try (ResultSet columns = metadata.getColumns(
+                connection.getCatalog(), null, tablePattern, columnPattern)) {
+            while (columns.next()) {
+                if (tableName.equalsIgnoreCase(columns.getString("TABLE_NAME"))
+                        && columnName.equalsIgnoreCase(columns.getString("COLUMN_NAME"))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private String escapePattern(String value, String escape) {
+        if (escape == null || escape.isEmpty())
+            return value;
+        return value.replace(escape, escape + escape)
+                .replace("_", escape + "_")
+                .replace("%", escape + "%");
     }
 
 }

@@ -1,8 +1,5 @@
 package org.black_ixx.playerpoints;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import net.milkbowl.vault.economy.EconomyResponse.ResponseType;
@@ -11,8 +8,15 @@ import org.black_ixx.playerpoints.models.Tuple;
 import org.black_ixx.playerpoints.util.PointsUtils;
 import org.bukkit.OfflinePlayer;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import java.util.logging.Level;
+
 /**
  * Vault economy layer for PlayerPoints.
+ *
+ * <p>Vault mutations are synchronous, so they wait for the database transaction to finish.
  */
 public class PlayerPointsVaultLayer implements Economy {
 
@@ -120,40 +124,17 @@ public class PlayerPointsVaultLayer implements Economy {
         return this.has(player, amount);
     }
 
-    @Override
-    public EconomyResponse withdrawPlayer(String playerName, double amount) {
-        int points = (int) amount;
-        UUID uuid = this.handleTranslation(playerName);
-        if (uuid == null)
-            return new EconomyResponse(0, 0, ResponseType.FAILURE, "Invalid player");
-
-        boolean result = this.plugin.getAPI().take(uuid, points);
-        int balance = this.plugin.getAPI().look(uuid);
-
-        EconomyResponse response;
-        if (result) {
-            response = new EconomyResponse(amount, balance, ResponseType.SUCCESS, null);
-        } else {
-            response = new EconomyResponse(amount, balance, ResponseType.FAILURE, "Insufficient balance");
+    private static Integer toWholePoints(double amount) {
+        if (!Double.isFinite(amount) || amount < 0 || amount > Integer.MAX_VALUE
+                || amount != Math.rint(amount)) {
+            return null;
         }
-
-        return response;
+        return (int) amount;
     }
 
-    @Override
-    public EconomyResponse withdrawPlayer(OfflinePlayer player, double amount) {
-        int points = (int) amount;
-        boolean result = this.plugin.getAPI().take(player.getUniqueId(), points);
-        int balance = this.plugin.getAPI().look(player.getUniqueId());
-
-        EconomyResponse response;
-        if (result) {
-            response = new EconomyResponse(amount, balance, ResponseType.SUCCESS, null);
-        } else {
-            response = new EconomyResponse(amount, balance, ResponseType.FAILURE, "Insufficient balance");
-        }
-
-        return response;
+    private static EconomyResponse invalidAmount(double amount) {
+        return new EconomyResponse(amount, 0, ResponseType.FAILURE,
+                "PlayerPoints only supports non-negative whole amounts within the signed 32-bit range");
     }
 
     @Override
@@ -167,38 +148,88 @@ public class PlayerPointsVaultLayer implements Economy {
     }
 
     @Override
-    public EconomyResponse depositPlayer(String playerName, double amount) {
-        int points = (int) amount;
+    public EconomyResponse withdrawPlayer(String playerName, double amount) {
         UUID uuid = this.handleTranslation(playerName);
         if (uuid == null)
             return new EconomyResponse(0, 0, ResponseType.FAILURE, "Invalid player");
+        return this.withdraw(uuid, amount);
+    }
 
-        boolean result = this.plugin.getAPI().give(uuid, points);
-        int balance = this.plugin.getAPI().look(uuid);
+    @Override
+    public EconomyResponse withdrawPlayer(OfflinePlayer player, double amount) {
+        return this.withdraw(player.getUniqueId(), amount);
+    }
 
-        EconomyResponse response;
-        if (result) {
-            response = new EconomyResponse(amount, balance, ResponseType.SUCCESS, null);
-        } else {
-            response = new EconomyResponse(amount, balance, ResponseType.FAILURE, null);
-        }
-
-        return response;
+    @Override
+    public EconomyResponse depositPlayer(String playerName, double amount) {
+        UUID uuid = this.handleTranslation(playerName);
+        if (uuid == null)
+            return new EconomyResponse(0, 0, ResponseType.FAILURE, "Invalid player");
+        return this.deposit(uuid, amount);
     }
 
     @Override
     public EconomyResponse depositPlayer(OfflinePlayer player, double amount) {
-        int points = (int) amount;
-        boolean result = this.plugin.getAPI().give(player.getUniqueId(), points);
-        int balance = this.plugin.getAPI().look(player.getUniqueId());
+        return this.deposit(player.getUniqueId(), amount);
+    }
 
-        EconomyResponse response;
-        if (result) {
-            response = new EconomyResponse(amount, balance, ResponseType.SUCCESS, null);
-        } else {
-            response = new EconomyResponse(amount, balance, ResponseType.FAILURE, null);
+    private EconomyResponse withdraw(UUID playerId, double amount) {
+        Integer points = toWholePoints(amount);
+        if (points == null)
+            return invalidAmount(amount);
+        try {
+            int availablePoints = this.plugin.getAPI().look(playerId);
+            if (points == 0)
+                return new EconomyResponse(0, availablePoints, ResponseType.SUCCESS, null);
+            boolean withdrawn = this.plugin.getAPI().take(playerId, points);
+            if (!withdrawn) {
+                String error = availablePoints < points
+                        ? "Insufficient balance"
+                        : "PlayerPoints rejected the withdrawal";
+                return new EconomyResponse(amount, availablePoints, ResponseType.FAILURE, error);
+            }
+
+            int fallback = Math.max(0, availablePoints - points);
+            int balance = this.lookAfterCommitOrFallback(playerId, fallback);
+            return new EconomyResponse(amount, balance, ResponseType.SUCCESS, null);
+        } catch (RuntimeException failure) {
+            return new EconomyResponse(amount, 0, ResponseType.FAILURE,
+                    "Unable to update the PlayerPoints balance: " + failure.getMessage());
         }
-        return response;
+    }
+
+    private EconomyResponse deposit(UUID playerId, double amount) {
+        Integer points = toWholePoints(amount);
+        if (points == null)
+            return invalidAmount(amount);
+        try {
+            int previousBalance = this.plugin.getAPI().look(playerId);
+            if (points == 0)
+                return new EconomyResponse(0, previousBalance, ResponseType.SUCCESS, null);
+            if (!this.plugin.getAPI().give(playerId, points)) {
+                return new EconomyResponse(amount, previousBalance, ResponseType.FAILURE,
+                        "PlayerPoints rejected the deposit");
+            }
+
+            long expected = (long) previousBalance + points;
+            int fallback = expected <= Integer.MAX_VALUE ? (int) expected : previousBalance;
+            int balance = this.lookAfterCommitOrFallback(playerId, fallback);
+            return new EconomyResponse(amount, balance, ResponseType.SUCCESS, null);
+        } catch (RuntimeException failure) {
+            return new EconomyResponse(amount, 0, ResponseType.FAILURE,
+                    "Unable to update the PlayerPoints balance: " + failure.getMessage());
+        }
+    }
+
+    private int lookAfterCommitOrFallback(UUID playerId, int fallback) {
+        try {
+            return this.plugin.getAPI().look(playerId);
+        } catch (RuntimeException failure) {
+            this.plugin.getLogger().log(Level.WARNING,
+                    "Unable to read the committed PlayerPoints balance for " + playerId,
+                    failure);
+            return fallback;
+        }
     }
 
     @Override
@@ -295,12 +326,8 @@ public class PlayerPointsVaultLayer implements Economy {
         try {
             return UUID.fromString(name);
         } catch (IllegalArgumentException e) {
-            Tuple<UUID, String> tuple = PointsUtils.getPlayerByName(name);
-            if (tuple != null) {
-                return tuple.getFirst();
-            } else {
-                return null;
-            }
+            Tuple<UUID, String> player = PointsUtils.getPlayerByName(name);
+            return player == null ? null : player.getFirst();
         }
     }
 

@@ -8,14 +8,16 @@ import dev.rosewood.rosegarden.command.framework.CommandContext;
 import dev.rosewood.rosegarden.command.framework.CommandInfo;
 import dev.rosewood.rosegarden.command.framework.annotation.RoseExecutable;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import org.black_ixx.playerpoints.PlayerPoints;
 import org.black_ixx.playerpoints.commands.arguments.StringSuggestingArgumentHandler;
 import org.black_ixx.playerpoints.config.SettingKey;
 import org.black_ixx.playerpoints.util.PointsUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 public class PayCommand extends BasePointsCommand {
 
@@ -63,26 +65,58 @@ public class PayCommand extends BasePointsCommand {
                 return;
             }
 
-            if (this.api.pay(player.getUniqueId(), target.getFirst(), amount)) {
-                // Send success message to sender
-                this.localeManager.sendCommandMessage(player, "command-pay-sent", StringPlaceholders.builder("amount", PointsUtils.formatPoints(amount))
-                        .add("balance", PointsUtils.formatPoints(this.api.look(player.getUniqueId())))
-                        .add("currency", this.localeManager.getCurrencyName(amount))
-                        .add("player", target.getSecond())
-                        .build());
-
-                // Send success message to target
-                Player onlinePlayer = Bukkit.getPlayer(target.getFirst());
-                if (onlinePlayer != null) {
-                    this.localeManager.sendCommandMessage(onlinePlayer, "command-pay-received", StringPlaceholders.builder("amount", PointsUtils.formatPoints(amount))
-                            .add("balance", PointsUtils.formatPoints(this.api.look(onlinePlayer.getUniqueId())))
-                            .add("currency", this.localeManager.getCurrencyName(amount))
-                            .add("player", player.getName())
-                            .build());
+            UUID sourceId = player.getUniqueId();
+            String sourceName = player.getName();
+            this.rosePlugin.getScheduler().runTaskAsync(() -> {
+                int permanentPoints;
+                boolean paid;
+                try {
+                    permanentPoints = this.api.lookPermanent(sourceId);
+                    paid = this.api.pay(sourceId, target.getFirst(), amount);
+                } catch (RuntimeException failure) {
+                    this.rosePlugin.getLogger().log(Level.WARNING,
+                            "Failed to transfer PlayerPoints", failure);
+                    this.rosePlugin.getScheduler().runTask(() ->
+                            this.localeManager.sendCommandMessage(
+                                    player, "command-points-update-failure"));
+                    return;
                 }
-            } else {
-                this.localeManager.sendCommandMessage(player, "command-pay-lacking-funds", StringPlaceholders.of("currency", this.localeManager.getCurrencyName(0)));
-            }
+
+                String sourceBalance = paid ? this.lookFormattedOrUnknown(sourceId) : "?";
+                String targetBalance = paid
+                        ? this.lookFormattedOrUnknown(target.getFirst()) : "?";
+                this.rosePlugin.getScheduler().runTask(() -> {
+                    if (!paid) {
+                        if (permanentPoints < amount) {
+                            this.localeManager.sendCommandMessage(player,
+                                    "command-pay-lacking-funds",
+                                    StringPlaceholders.of("currency",
+                                            this.localeManager.getCurrencyName(0)));
+                        } else {
+                            this.localeManager.sendCommandMessage(
+                                    player, "command-points-update-failure");
+                        }
+                        return;
+                    }
+
+                    this.localeManager.sendCommandMessage(player, "command-pay-sent",
+                            StringPlaceholders.builder("amount", PointsUtils.formatPoints(amount))
+                                    .add("balance", sourceBalance)
+                                    .add("currency", this.localeManager.getCurrencyName(amount))
+                                    .add("player", target.getSecond())
+                                    .build());
+
+                    Player onlinePlayer = Bukkit.getPlayer(target.getFirst());
+                    if (onlinePlayer != null) {
+                        this.localeManager.sendCommandMessage(onlinePlayer, "command-pay-received",
+                                StringPlaceholders.builder("amount", PointsUtils.formatPoints(amount))
+                                        .add("balance", targetBalance)
+                                        .add("currency", this.localeManager.getCurrencyName(amount))
+                                        .add("player", sourceName)
+                                        .build());
+                    }
+                });
+            });
         });
     }
 

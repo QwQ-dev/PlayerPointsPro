@@ -39,36 +39,60 @@ command-help-title: '&eCác lệnh có sẵn:'
 command-give-description: 'Trao cho người chơi points'
 command-give-success: '&b%player% &ađã nhận được &b%amount% &a%currency%.'
 command-give-received: '&eBạn đã nhận được &b%amount% &e%currency%.'
+command-points-update-failure: '&cUnable to update the points balance. No changes were saved.'
+
+# Give Temporary Command
+command-give-temp-description: 'Give a player temporary points'
+command-give-temp-success: '&b%player% &awas given &b%amount% &atemporary %currency% for &b%duration%&a. New balance: &b%balance%&a.'
+command-give-temp-received: '&eYou received &b%amount% &etemporary %currency% for &b%duration%&e. New balance: &b%balance%&e.'
+invalid-duration: '&cInvalid duration. Use values such as 30s, 15m, 12h, 7d, or 1d12h.'
 
 # Give All Command
 command-giveall-description: 'Trao cho tất cả người chơi trực tuyến points'
 command-giveall-success: '&aTrao &b%amount% &a%currency% cho tất cả người chơi trực tuyến.'
+command-giveall-partial: '&eGave &b%amount% &e%currency% to &b%success%/%total% &eonline players; the remaining updates were rejected.'
 
 # Take Command
 command-take-description: 'Lấy points từ người chơi'
 command-take-success: '&aLấy đi &b%amount% &a%currency% từ &b%player%&a.'
 command-take-taken: ''
 command-take-not-enough: '&b%player% &ckhông có đủ %currency% cho điều này.'
+command-take-temp-description: "Take only temporary points from a player"
+command-take-temp-success: "&aTook &b%amount% &atemporary %currency% from &b%player%&a."
+command-take-temp-not-enough: "&b%player% &cdoes not have enough temporary %currency% for that."
+command-take-permanent-description: "Take only permanent points from a player"
+command-take-permanent-success: "&aTook &b%amount% &apermanent %currency% from &b%player%&a."
+command-take-permanent-not-enough: "&b%player% &cdoes not have enough permanent %currency% for that."
 
 # Look Command
 command-look-description: 'Xem points của người chơi'
 command-look-success: '&b%player% &ecó &b%amount% &e%currency%.'
+command-balance-breakdown: "&ePermanent: &b%permanent% &8| &eTemporary: &b%temporary%"
+command-temporary-grant-entry: "&7  - &b%amount% %currency% &7expires at &b%expiration%"
 
 # Pay Command
 command-pay-description: 'Chuyển points cho người chơi'
 command-pay-self: '&cBạn không thể chuyển cho chính mình.'
 command-pay-sent: '&aBạn đã chuyển cho &b%player% %amount% &a%currency%.'
 command-pay-received: '&eBạn đã được chuyển &b%amount% &e%currency% bởi &b%player%&e.'
-command-pay-lacking-funds: '&cBạn không có đủ %currency% cho điều này.'
+command-pay-lacking-funds: '&cYou do not have enough permanent %currency% to transfer.'
 command-pay-minimum-amount: '&cSố tiền tối thiểu bạn có thể thanh toán là &b%amount% &c%currency%.'
 
 # Set Command
 command-set-description: 'Đặt số points của người chơi'
 command-set-success: '&aĐặt số %currency% của &b%player% &athành &b%amount%&a.'
+command-set-permanent-description: "Set only permanent points for a player"
+command-set-permanent-success: "&aSet permanent %currency% for &b%player% &ato &b%amount%&a. Total balance: &b%balance%&a."
+command-set-temp-description: "Replace temporary points for a player"
+command-set-temp-success: "&aSet temporary %currency% for &b%player% &ato &b%amount% &afor &b%duration%&a. Total balance: &b%balance%&a."
 
 # Reset Command
 command-reset-description: 'Đặt lại số points của người chơi'
 command-reset-success: '&aĐặt lại số %currency% cho &b%player% &a.'
+command-reset-permanent-description: "Reset only permanent points for a player"
+command-reset-permanent-success: "&aReset permanent %currency% for &b%player%&a. Total balance: &b%balance%&a."
+command-reset-temp-description: "Reset only temporary points for a player"
+command-reset-temp-success: "&aReset temporary %currency% for &b%player%&a. Total balance: &b%balance%&a."
 
 # Me Command
 command-me-description: 'Xem số points của bạn'
@@ -92,12 +116,14 @@ command-reload-reloaded: '&aCác tệp cấu hình và ngôn ngữ đã được
 command-export-description: 'Xuất dữ liệu sang storage.yml'
 command-export-success: '&aLưu dữ liệu đã được xuất sang storage.yml.'
 command-export-warning: '&cLưu ý: Tệp storage.yml đã tồn tại. Nếu bạn muốn ghi đè nó, sử dụng &b/points export confirm&c.'
+command-export-failure: '&cKhông thể xuất storage.yml. Hãy xem bảng điều khiển để biết chi tiết; bản sao lưu hiện có vẫn được giữ nguyên.'
 
 # Import Command
 command-import-description: 'Nhập dữ liệu từ storage.yml'
 command-import-success: '&aLưu dữ liệu đã được nhập từ storage.yml.'
 command-import-no-backup: '&cKhông thể nhập, storage.yml không tồn tại. Bạn có thể tạo một cái bằng &b/points export &cvà sử dụng nó để chuyển dữ liệu giữa các loại cơ sở dữ liệu.'
 command-import-warning: '&cLưu ý: Thao tác này sẽ xóa tất cả dữ liệu khỏi cơ sở dữ liệu đang hoạt động và thay thế nó bằng nội dung của storage.yml. &cLoại cơ sở dữ liệu hiện đang hoạt động là &b&o&l%type%&c. &cNếu bạn hoàn toàn chắc chắn về điều này, hãy sử dụng &b/points import confirm&c.'
+command-import-failure: '&cKhông thể nhập storage.yml. Hãy xem bảng điều khiển để biết chi tiết; dữ liệu hiện có vẫn được giữ nguyên.'
 
 # Convert Command
 command-convert-description: 'Load dữ liệu tiền tệ từ một plugin khác'
@@ -112,10 +138,12 @@ command-convert-warning-currency: '&cLưu ý: Thao tác này sẽ xóa tất c�
 # Account Command
 command-account-description: 'Quản lý việc tạo và xóa tài khoản'
 command-account-create-success: '&aTài khoản được tạo thành công: &b%account%'
+command-account-create-failure: '&cUnable to create account &b%account%&c. No changes were saved.'
 command-account-create-exists: '&cKhông tạo được tài khoản. Tài khoản có tên %account% đã tồn tại.'
 command-account-delete-success: '&aĐã xóa tài khoản thành công.'
 command-account-delete-does-not-exist: '&cKhông xóa được tài khoản. Tài khoản có tên &b%account% &ckhông tồn tại.'
 command-account-delete-warning: '&cLưu ý: Thao tác này sẽ xóa tất cả dữ liệu tài khoản cho tài khoản &b%account%&c. Nếu bạn hoàn toàn chắc chắn về điều này, hãy sử dụng lệnh &b/points account delete %account% confirm&c.'
+command-account-delete-failure: '&cKhông thể xóa tài khoản &b%account%&c. Dữ liệu hiện có vẫn được giữ nguyên.'
 
 # Import Legacy Command
 command-importlegacy-description: 'Nhập một bảng kế thừa'

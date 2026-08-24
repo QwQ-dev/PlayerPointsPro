@@ -41,36 +41,60 @@ command-help-list-description-no-args: '&8 - &d/%cmd% %subcmd% &7- %desc%'
 command-give-description: 'Ad a játékosnak pontot'
 command-give-success: '&b%player% &akapott &b%amount% &a%currency%ot.'
 command-give-received: '&eKaptál &b%amount% &e%currency%ot.'
+command-points-update-failure: '&cUnable to update the points balance. No changes were saved.'
+
+# Give Temporary Command
+command-give-temp-description: 'Give a player temporary points'
+command-give-temp-success: '&b%player% &awas given &b%amount% &atemporary %currency% for &b%duration%&a. New balance: &b%balance%&a.'
+command-give-temp-received: '&eYou received &b%amount% &etemporary %currency% for &b%duration%&e. New balance: &b%balance%&e.'
+invalid-duration: '&cInvalid duration. Use values such as 30s, 15m, 12h, 7d, or 1d12h.'
 
 # Give All Command
 command-giveall-description: 'Ad az összes elérhető játékosnak pontot'
 command-giveall-success: '&aAdtál &b%amount% &a%currency%ot az összes elérhető játékosnak.'
+command-giveall-partial: '&eGave &b%amount% &e%currency% to &b%success%/%total% &eonline players; the remaining updates were rejected.'
 
 # Take Command
 command-take-description: 'Elvesz pontot a játékostól'
 command-take-success: '&aElvettél &b%amount% &a%currency%ot &b%player% &ajátékostól.'
 command-take-taken: ''
 command-take-not-enough: '&b%player%-nak/nek &cnincs elég %currency%ja ehhez.'
+command-take-temp-description: "Take only temporary points from a player"
+command-take-temp-success: "&aTook &b%amount% &atemporary %currency% from &b%player%&a."
+command-take-temp-not-enough: "&b%player% &cdoes not have enough temporary %currency% for that."
+command-take-permanent-description: "Take only permanent points from a player"
+command-take-permanent-success: "&aTook &b%amount% &apermanent %currency% from &b%player%&a."
+command-take-permanent-not-enough: "&b%player% &cdoes not have enough permanent %currency% for that."
 
 # Look Command
 command-look-description: 'Játékos pontjainak megtekintése'
 command-look-success: '&b%player%-nak/nek &evan &b%amount% &e%currency%ja.'
+command-balance-breakdown: "&ePermanent: &b%permanent% &8| &eTemporary: &b%temporary%"
+command-temporary-grant-entry: "&7  - &b%amount% %currency% &7expires at &b%expiration%"
 
 # Pay Command
 command-pay-description: 'Fizetés egy játékosnak'
 command-pay-self: '&cNem tudsz magadnak fizetni.'
 command-pay-sent: '&aFizettél &b%player%-nak/nek %amount% &a%currency%ot.'
 command-pay-received: '&eFizetett neked &b%amount% &e%currency%ot &b%player%&e.'
-command-pay-lacking-funds: '&cNincs elég %currency%od ehhez.'
+command-pay-lacking-funds: '&cYou do not have enough permanent %currency% to transfer.'
 command-pay-minimum-amount: '&cA minimálisan fizethető összeg &b%összeg% &c%pénz%.'
 
 # Set Command
 command-set-description: 'Beállítja egy játékos pontját'
 command-set-success: '&aBeállítottad a %currency%ját &b%player%-nak/nek &aennyire &b%amount%&a.'
+command-set-permanent-description: "Set only permanent points for a player"
+command-set-permanent-success: "&aSet permanent %currency% for &b%player% &ato &b%amount%&a. Total balance: &b%balance%&a."
+command-set-temp-description: "Replace temporary points for a player"
+command-set-temp-success: "&aSet temporary %currency% for &b%player% &ato &b%amount% &afor &b%duration%&a. Total balance: &b%balance%&a."
 
 # Reset Command
 command-reset-description: 'Játékos pontjait alaphelyzetbe állítja'
 command-reset-success: '&aAlaphelyzetbe állítottad a %currency%jait &b%player%-nak/nek&a.'
+command-reset-permanent-description: "Reset only permanent points for a player"
+command-reset-permanent-success: "&aReset permanent %currency% for &b%player%&a. Total balance: &b%balance%&a."
+command-reset-temp-description: "Reset only temporary points for a player"
+command-reset-temp-success: "&aReset temporary %currency% for &b%player%&a. Total balance: &b%balance%&a."
 
 # Me Command
 command-me-description: 'Pontjaid megtekintése'
@@ -94,12 +118,14 @@ command-reload-reloaded: '&aKonfiguráció és a fordítások újratöltődtek.'
 command-export-description: 'Exportálja az adatokat a storage.yml fájlba'
 command-export-success: '&aMentett adatok exportálva a storage.yml fájlba.'
 command-export-warning: '&cFigyelmeztetés: A storage.yml fájl már létezik. Ha felül szeretnéd írni, használd a &b/points export confirm &cparancsot.'
+command-export-failure: '&cA storage.yml exportálása nem sikerült. A részletekért nézd meg a konzolt; a meglévő biztonsági mentés megmaradt.'
 
 # Import Command
 command-import-description: 'Importálja az adatokat a storage.yml fájlból'
 command-import-success: '&aMentett adatok importálva a storage.yml fájlból.'
 command-import-no-backup: 'command-import-no-backup: ''&cSikertelen importálás, storage.yml fájl nem létezik. Készíthetsz egyet a &b/points export &cparancsal és használhatod hogy átvidd az adatokat az adatbázis típusok között.'''
 command-import-warning: '&cFigyelmeztetés: Ez a művelet törli az összes eddigi adatot és importálja az adatokat a storage.yml fájlból. &cA jelenleg aktív adatbázis típusa &b&o&l%type%&c. &cHa teljesen biztos vagy ebben, akkor használd a &b/points import confirm &cparancsot.'
+command-import-failure: '&cA storage.yml importálása nem sikerült. A részletekért nézd meg a konzolt; a meglévő adatok megmaradtak.'
 
 # Convert Command
 command-convert-description: 'Betölti a valuta adatot egy másik pluginból'
@@ -114,11 +140,13 @@ command-convert-warning-currency: '&cFigyelmeztetés: Ez a művelet törli az ö
 # Account Command
 command-account-description: 'Kezeli a számlák létrehozását és törlését'
 command-account-create-success: '&aSikeresen létrehozott fiók: &b%account%'
+command-account-create-failure: '&cUnable to create account &b%account%&c. No changes were saved.'
 command-account-create-exists: '&cNem sikerült fiókot létrehozni. Egy &b%account% &cnevű fiók már létezik.'
 command-account-create-name-invalid: '&cNem sikerült fiókot létrehozni. A fiókneveknek 3-16 karakter hosszúságúnak kell lenniük, és csak betűket, számokat és aláhúzásokat tartalmazhatnak.'
 command-account-delete-success: '&aSikeresen törölte a fiókot.'
 command-account-delete-does-not-exist: '&cNem sikerült törölni a fiókot. A &b%account% &cnevű fiók nem létezik.'
 command-account-delete-warning: '&cÉrtesítés: Ez a művelet törli a &b%account% &cfiók összes fiókadatát. Ha teljesen biztos vagy benne, használd &b/points account delete %account% confirm&c.'
+command-account-delete-failure: '&cA(z) &b%account% &cfiók törlése nem sikerült. A meglévő adatok megmaradtak.'
 
 # Import Legacy Command
 command-importlegacy-description: 'Importálja a régebbi táblát'

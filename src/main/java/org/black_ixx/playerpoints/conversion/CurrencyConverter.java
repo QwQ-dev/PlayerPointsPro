@@ -22,6 +22,11 @@ public abstract class CurrencyConverter {
         return this.plugin != null && this.plugin.isEnabled();
     }
 
+    protected static void requireImportSucceeded(boolean committed) {
+        if (!committed)
+            throw new IllegalStateException("PlayerPoints rejected the converted data");
+    }
+
     public abstract void convert(String currencyId);
 
 }

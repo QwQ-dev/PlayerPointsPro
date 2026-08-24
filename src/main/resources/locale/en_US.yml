@@ -41,36 +41,60 @@ command-help-list-description-no-args: '&8 - &d/%cmd% %subcmd% &7- %desc%'
 command-give-description: 'Give a player points'
 command-give-success: '&b%player% &awas given &b%amount% &a%currency%.'
 command-give-received: '&eYou have received &b%amount% &e%currency%.'
+command-points-update-failure: '&cUnable to update the points balance. No changes were saved.'
+
+# Give Temporary Command
+command-give-temp-description: 'Give a player temporary points'
+command-give-temp-success: '&b%player% &awas given &b%amount% &atemporary %currency% for &b%duration%&a. New balance: &b%balance%&a.'
+command-give-temp-received: '&eYou received &b%amount% &etemporary %currency% for &b%duration%&e. New balance: &b%balance%&e.'
+invalid-duration: '&cInvalid duration. Use values such as 30s, 15m, 12h, 7d, or 1d12h.'
 
 # Give All Command
 command-giveall-description: 'Gives all online players points'
 command-giveall-success: '&aGave &b%amount% &a%currency% to all online players.'
+command-giveall-partial: '&eGave &b%amount% &e%currency% to &b%success%/%total% &eonline players; the remaining updates were rejected.'
 
 # Take Command
 command-take-description: 'Take points from a player'
 command-take-success: '&aTook &b%amount% &a%currency% from &b%player%&a.'
 command-take-taken: ''
 command-take-not-enough: '&b%player% &cdoes not have enough %currency% for that.'
+command-take-temp-description: 'Take only temporary points from a player'
+command-take-temp-success: '&aTook &b%amount% &atemporary %currency% from &b%player%&a.'
+command-take-temp-not-enough: '&b%player% &cdoes not have enough temporary %currency% for that.'
+command-take-permanent-description: 'Take only permanent points from a player'
+command-take-permanent-success: '&aTook &b%amount% &apermanent %currency% from &b%player%&a.'
+command-take-permanent-not-enough: '&b%player% &cdoes not have enough permanent %currency% for that.'
 
 # Look Command
 command-look-description: 'View a player''s points'
 command-look-success: '&b%player% &ehas &b%amount% &e%currency%.'
+command-balance-breakdown: '&ePermanent: &b%permanent% &8| &eTemporary: &b%temporary%'
+command-temporary-grant-entry: '&7  - &b%amount% %currency% &7expires at &b%expiration%'
 
 # Pay Command
 command-pay-description: 'Pay a player'
 command-pay-self: '&cYou cannot pay yourself!'
 command-pay-sent: '&aYou paid &b%player% %amount% &a%currency%.'
 command-pay-received: '&eYou were paid &b%amount% &e%currency% by &b%player%&e.'
-command-pay-lacking-funds: '&cYou do not have enough %currency% for that.'
+command-pay-lacking-funds: '&cYou do not have enough permanent %currency% to transfer.'
 command-pay-minimum-amount: '&cThe minimum amount you can pay is &b%amount%&c %currency%.'
 
 # Set Command
 command-set-description: 'Set a player''s points'
 command-set-success: '&aSet the %currency% of &b%player% &ato &b%amount%&a.'
+command-set-permanent-description: 'Set only a player''s permanent points'
+command-set-permanent-success: '&aSet &b%player%''s &apermanent %currency% to &b%amount%&a. Total balance: &b%balance%&a.'
+command-set-temp-description: 'Replace a player''s temporary points'
+command-set-temp-success: '&aSet &b%player%''s &atemporary %currency% to &b%amount% &afor &b%duration%&a. Total balance: &b%balance%&a.'
 
 # Reset Command
 command-reset-description: 'Reset a player''s points'
 command-reset-success: '&aReset the %currency% for &b%player%&a.'
+command-reset-permanent-description: 'Reset only a player''s permanent points'
+command-reset-permanent-success: '&aReset &b%player%''s &apermanent %currency%. Total balance: &b%balance%&a.'
+command-reset-temp-description: 'Reset only a player''s temporary points'
+command-reset-temp-success: '&aReset &b%player%''s &atemporary %currency%. Total balance: &b%balance%&a.'
 
 # Me Command
 command-me-description: 'View your points'
@@ -94,12 +118,14 @@ command-reload-reloaded: '&aConfiguration and locale files were reloaded.'
 command-export-description: 'Exports the data to storage.yml'
 command-export-success: '&aSave data has been exported to storage.yml.'
 command-export-warning: '&cNotice: A storage.yml file already exists. If you would like to overwrite it, use &b/points export confirm&c.'
+command-export-failure: '&cUnable to export storage.yml. Check the console for details; any existing backup was preserved.'
 
 # Import Command
 command-import-description: 'Imports the data from storage.yml'
 command-import-success: '&aSave data has been imported from storage.yml.'
 command-import-no-backup: '&cUnable to import, storage.yml does not exist. You can generate one with &b/points export &cand use it to transfer data between database types.'
 command-import-warning: '&cNotice: This operation will delete all data from the active database and replace it with the contents of storage.yml. &cThe currently active database type is &b&o&l%type%&c. &cIf you are absolutely sure about this, use &b/points import confirm&c.'
+command-import-failure: '&cUnable to import storage.yml. Check the console for details; existing data was preserved.'
 
 # Convert Command
 command-convert-description: 'Loads currency data from another plugin'
@@ -114,11 +140,13 @@ command-convert-warning-currency: '&cNotice: This operation will delete all data
 # Account Command
 command-account-description: 'Create or delete an accounts'
 command-account-create-success: '&aSuccessfully created account: &b%account%'
+command-account-create-failure: '&cUnable to create account &b%account%&c. No changes were saved.'
 command-account-create-exists: '&cFailed to create account. An account named &b%account% &calready exists.'
 command-account-create-name-invalid: '&cFailed to create account. Account names must be between 3-16 characters long and can only contain letters, numbers, and underscores.'
 command-account-delete-success: '&aSuccessfully deleted account &b%account%&a.'
 command-account-delete-does-not-exist: '&cFailed to delete account. An account named &b%account% &cdoes not exist.'
 command-account-delete-warning: '&cNotice: This operation will delete all account data for the account &b%account%&c. If you are absolutely sure about this, use &b/points account delete %account% confirm&c.'
+command-account-delete-failure: '&cUnable to delete account &b%account%&c. Existing data was preserved.'
 
 # Import Legacy Command
 command-importlegacy-description: 'Import a legacy table'

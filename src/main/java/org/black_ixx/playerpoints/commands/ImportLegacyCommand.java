@@ -11,6 +11,8 @@ import org.black_ixx.playerpoints.PlayerPoints;
 import org.black_ixx.playerpoints.manager.DataManager;
 import org.bukkit.command.CommandSender;
 
+import java.util.logging.Level;
+
 public class ImportLegacyCommand extends BasePointsCommand {
 
     public ImportLegacyCommand(PlayerPoints playerPoints) {
@@ -28,7 +30,15 @@ public class ImportLegacyCommand extends BasePointsCommand {
 
         String safeTable = tableName.replaceAll("[^A-Za-z0-9_]", "");
         this.rosePlugin.getScheduler().runTaskAsync(() -> {
-            if (dataManager.importLegacyTable(safeTable)) {
+            boolean imported;
+            try {
+                imported = dataManager.importLegacyTable(safeTable);
+            } catch (RuntimeException failure) {
+                this.rosePlugin.getLogger().log(Level.WARNING,
+                        "Unable to import legacy table " + safeTable, failure);
+                imported = false;
+            }
+            if (imported) {
                 this.localeManager.sendCommandMessage(sender, "command-importlegacy-success", StringPlaceholders.of("table", safeTable));
             } else {
                 this.localeManager.sendCommandMessage(sender, "command-importlegacy-failure", StringPlaceholders.of("table", safeTable));

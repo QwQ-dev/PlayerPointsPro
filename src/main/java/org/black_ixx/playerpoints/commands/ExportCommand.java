@@ -5,16 +5,21 @@ import dev.rosewood.rosegarden.command.framework.ArgumentsDefinition;
 import dev.rosewood.rosegarden.command.framework.CommandContext;
 import dev.rosewood.rosegarden.command.framework.CommandInfo;
 import dev.rosewood.rosegarden.command.framework.annotation.RoseExecutable;
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
 import org.black_ixx.playerpoints.PlayerPoints;
+import org.black_ixx.playerpoints.database.PointsBackup;
+import org.black_ixx.playerpoints.database.PointsBackupParser;
 import org.black_ixx.playerpoints.manager.DataManager;
-import org.black_ixx.playerpoints.models.SortedPlayer;
+import org.black_ixx.playerpoints.models.TemporaryPointGrant;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+import java.util.UUID;
+import java.util.logging.Level;
 
 public class ExportCommand extends BasePointsCommand {
 
@@ -32,24 +37,46 @@ public class ExportCommand extends BasePointsCommand {
                 return;
             }
 
-            if (file.exists())
-                file.delete();
-
-            List<SortedPlayer> data = this.rosePlugin.getManager(DataManager.class).getTopSortedPoints();
-            FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
+            DataManager dataManager = this.rosePlugin.getManager(DataManager.class);
+            PointsBackup snapshot;
+            try {
+                snapshot = dataManager.getBackupSnapshot();
+            } catch (RuntimeException e) {
+                this.rosePlugin.getLogger().log(Level.SEVERE,
+                        "Unable to load a consistent points export snapshot.", e);
+                this.localeManager.sendCommandMessage(sender, "command-export-failure");
+                return;
+            }
+            Map<UUID, Integer> permanentPoints = snapshot.getPermanentPoints();
+            FileConfiguration configuration = new YamlConfiguration();
+            configuration.set("Backup-Version", PointsBackupParser.CURRENT_VERSION);
             ConfigurationSection pointsSection = configuration.createSection("Points");
             ConfigurationSection uuidSection = configuration.createSection("UUIDs");
+            ConfigurationSection temporaryPointsSection = configuration.createSection("TemporaryPoints");
 
-            for (SortedPlayer playerData : data) {
-                pointsSection.set(playerData.getUniqueId().toString(), playerData.getPoints());
-                if (!playerData.getUsername().equalsIgnoreCase("Unknown"))
-                    uuidSection.set(playerData.getUniqueId().toString(), playerData.getUsername());
+            for (Map.Entry<UUID, Integer> entry : permanentPoints.entrySet())
+                pointsSection.set(entry.getKey().toString(), entry.getValue());
+
+            for (Map.Entry<UUID, String> entry : snapshot.getUsernames().entrySet())
+                uuidSection.set(entry.getKey().toString(), entry.getValue());
+
+            for (TemporaryPointGrant grant : snapshot.getTemporaryGrants()) {
+                ConfigurationSection grantSection = temporaryPointsSection.createSection(grant.getGrantId().toString());
+                grantSection.set("uuid", grant.getPlayerId().toString());
+                grantSection.set("amount", grant.getAmount());
+                grantSection.set("expires-at", grant.getExpiresAt());
             }
 
             try {
-                configuration.save(file);
+                AtomicFileWriter.replace(file, temporary -> {
+                    configuration.save(temporary);
+                    PointsBackupParser.load(temporary, System.currentTimeMillis());
+                });
             } catch (IOException e) {
-                e.printStackTrace();
+                this.rosePlugin.getLogger().log(Level.SEVERE,
+                        "Unable to write storage.yml; the previous backup was preserved.", e);
+                this.localeManager.sendCommandMessage(sender, "command-export-failure");
+                return;
             }
 
             this.localeManager.sendCommandMessage(sender, "command-export-success");

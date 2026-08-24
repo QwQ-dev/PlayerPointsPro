@@ -28,3 +28,7 @@ build/
 target/
 *.iml
 /bin/
+
+# test
+/.worktrees/
+src/test/

@@ -2,10 +2,6 @@ package org.black_ixx.playerpoints.hook;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.black_ixx.playerpoints.PlayerPoints;
 import org.black_ixx.playerpoints.manager.DataManager;
@@ -15,6 +11,11 @@ import org.black_ixx.playerpoints.models.SortedPlayer;
 import org.black_ixx.playerpoints.models.Tuple;
 import org.black_ixx.playerpoints.util.PointsUtils;
 import org.bukkit.OfflinePlayer;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 public class PointsPlaceholderExpansion extends PlaceholderExpansion {
 
@@ -40,13 +41,12 @@ public class PointsPlaceholderExpansion extends PlaceholderExpansion {
     @Override
     public String onRequest(OfflinePlayer player, String placeholder) {
         if (player != null) {
+            String balanceValue = BalancePlaceholderResolver.resolve(placeholder,
+                    () -> this.dataManager.getDetailedBalance(player.getUniqueId()));
+            if (balanceValue != null)
+                return balanceValue;
+
             switch (placeholder.toLowerCase()) {
-                case "points":
-                    return String.valueOf(this.dataManager.getEffectivePoints(player.getUniqueId()));
-                case "points_formatted":
-                    return PointsUtils.formatPoints(this.dataManager.getEffectivePoints(player.getUniqueId()));
-                case "points_shorthand":
-                    return PointsUtils.formatPointsShorthand(this.dataManager.getEffectivePoints(player.getUniqueId()));
                 case "leaderboard_position":
                     Long position = this.leaderboardManager.getPlayerLeaderboardPosition(player.getUniqueId());
                     return String.valueOf(position != null ? position : -1);

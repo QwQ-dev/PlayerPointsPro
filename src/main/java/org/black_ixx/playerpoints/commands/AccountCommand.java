@@ -6,13 +6,15 @@ import dev.rosewood.rosegarden.command.framework.CommandContext;
 import dev.rosewood.rosegarden.command.framework.CommandInfo;
 import dev.rosewood.rosegarden.command.framework.annotation.RoseExecutable;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
-import java.util.Collections;
-import java.util.UUID;
-import java.util.regex.Pattern;
 import org.black_ixx.playerpoints.PlayerPoints;
 import org.black_ixx.playerpoints.commands.arguments.StringSuggestingArgumentHandler;
 import org.black_ixx.playerpoints.manager.DataManager;
 import org.black_ixx.playerpoints.util.PointsUtils;
+
+import java.util.Collections;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.regex.Pattern;
 
 public class AccountCommand extends BasePointsCommand {
 
@@ -39,13 +41,26 @@ public class AccountCommand extends BasePointsCommand {
             }
 
             this.rosePlugin.getScheduler().runTaskAsync(() -> {
-                if (dataManager.lookupCachedUUID(prefixedAccountName) != null) {
-                    this.localeManager.sendCommandMessage(context.getSender(), "command-account-create-exists", StringPlaceholders.of("account", accountName));
+                try {
+                    if (dataManager.lookupCachedUUID(prefixedAccountName) != null) {
+                        this.localeManager.sendCommandMessage(context.getSender(),
+                                "command-account-create-exists",
+                                StringPlaceholders.of("account", accountName));
+                        return;
+                    }
+                    dataManager.createNonPlayerAccount(prefixedAccountName);
+                } catch (RuntimeException failure) {
+                    this.rosePlugin.getLogger().log(Level.WARNING,
+                            "Unable to create account " + prefixedAccountName, failure);
+                    this.localeManager.sendCommandMessage(context.getSender(),
+                            "command-account-create-failure",
+                            StringPlaceholders.of("account", prefixedAccountName));
                     return;
                 }
 
-                dataManager.createNonPlayerAccount(prefixedAccountName);
-                this.localeManager.sendCommandMessage(context.getSender(), "command-account-create-success", StringPlaceholders.of("account", prefixedAccountName));
+                this.localeManager.sendCommandMessage(context.getSender(),
+                        "command-account-create-success",
+                        StringPlaceholders.of("account", prefixedAccountName));
             });
         }
 
@@ -81,8 +96,22 @@ public class AccountCommand extends BasePointsCommand {
             }
 
             this.rosePlugin.getScheduler().runTaskAsync(() -> {
-                dataManager.deleteAccount(accountID);
-                this.localeManager.sendCommandMessage(context.getSender(), "command-account-delete-success", StringPlaceholders.of("account", accountName));
+                boolean deleted;
+                try {
+                    deleted = dataManager.deleteAccountWithResult(accountID);
+                } catch (RuntimeException failure) {
+                    this.rosePlugin.getLogger().log(Level.WARNING,
+                            "Unable to delete account " + accountName, failure);
+                    deleted = false;
+                }
+                if (deleted) {
+                    this.localeManager.sendCommandMessage(context.getSender(), "command-account-delete-success", StringPlaceholders.of("account", accountName));
+                } else {
+                    this.rosePlugin.getLogger().warning(
+                            "Unable to delete account " + accountName + "; existing data was preserved");
+                    this.localeManager.sendCommandMessage(context.getSender(),
+                            "command-account-delete-failure", StringPlaceholders.of("account", accountName));
+                }
             });
         }
 

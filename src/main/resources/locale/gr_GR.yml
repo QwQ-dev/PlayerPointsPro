@@ -41,36 +41,60 @@ command-help-list-description-no-args: '&8 - &d/%cmd% %subcmd% &7- %desc%'
 command-give-description: 'Δώσε πόντους σε έναν παίκτη.'
 command-give-success: '&b%player% &έδωσε &b%amount% &a%currency%.'
 command-give-received: '&eΛάβατε &b%amount% &e%currency%.'
+command-points-update-failure: '&cUnable to update the points balance. No changes were saved.'
+
+# Give Temporary Command
+command-give-temp-description: 'Give a player temporary points'
+command-give-temp-success: '&b%player% &awas given &b%amount% &atemporary %currency% for &b%duration%&a. New balance: &b%balance%&a.'
+command-give-temp-received: '&eYou received &b%amount% &etemporary %currency% for &b%duration%&e. New balance: &b%balance%&e.'
+invalid-duration: '&cInvalid duration. Use values such as 30s, 15m, 12h, 7d, or 1d12h.'
 
 # Give All Command
 command-giveall-description: 'Δίνει σε όλους τους παίκτες που είναι online πόντους.'
 command-giveall-success: '&aΔόθηκαν &b%amount% &a%currency% σε όλους τους παίκτες που είναι online..'
+command-giveall-partial: '&eGave &b%amount% &e%currency% to &b%success%/%total% &eonline players; the remaining updates were rejected.'
 
 # Take Command
 command-take-description: 'Πάρε πόντους απο έναν παίκτη.'
 command-take-success: '&aΈλαβε &b%amount% &a%currency% από &b%player%&a.'
 command-take-taken: ''
 command-take-not-enough: '&b%player% &cδεν έχει αρκετά %currency% για αυτό.'
+command-take-temp-description: "Take only temporary points from a player"
+command-take-temp-success: "&aTook &b%amount% &atemporary %currency% from &b%player%&a."
+command-take-temp-not-enough: "&b%player% &cdoes not have enough temporary %currency% for that."
+command-take-permanent-description: "Take only permanent points from a player"
+command-take-permanent-success: "&aTook &b%amount% &apermanent %currency% from &b%player%&a."
+command-take-permanent-not-enough: "&b%player% &cdoes not have enough permanent %currency% for that."
 
 # Look Command
 command-look-description: 'Δες τους πόντου ενός παίκτη.'
 command-look-success: '&b%player% &eέχει &b%amount% &e%currency%.'
+command-balance-breakdown: "&ePermanent: &b%permanent% &8| &eTemporary: &b%temporary%"
+command-temporary-grant-entry: "&7  - &b%amount% %currency% &7expires at &b%expiration%"
 
 # Pay Command
 command-pay-description: 'Πλήρωσε έναν παίκτη.'
 command-pay-self: '&cΔεν μπορείς να πληρώσεις τον ευατό σου!'
 command-pay-sent: '&aΠλήρωσες &b%player% %amount% &a%currency%.'
 command-pay-received: '&eΠληρώθηκες &b%amount% &e%currency% από τον &b%player%&e.'
-command-pay-lacking-funds: '&cΔεν έχεις αρκετά %currency% για αυτό.'
+command-pay-lacking-funds: '&cYou do not have enough permanent %currency% to transfer.'
 command-pay-minimum-amount: '&cΤο ελάχιστο ποσό που μπορείτε να πληρώσετε είναι &b%amount% &c%currency%.'
 
 # Set Command
 command-set-description: 'Δήλωσε τους πόντους ενός παίκτη.'
 command-set-success: '&aΔήλωσε τα %currency% του &b%player% &aστο &b%amount%&a.'
+command-set-permanent-description: "Set only permanent points for a player"
+command-set-permanent-success: "&aSet permanent %currency% for &b%player% &ato &b%amount%&a. Total balance: &b%balance%&a."
+command-set-temp-description: "Replace temporary points for a player"
+command-set-temp-success: "&aSet temporary %currency% for &b%player% &ato &b%amount% &afor &b%duration%&a. Total balance: &b%balance%&a."
 
 # Reset Command
 command-reset-description: 'Μηδένισε τους πόντους ενός παίκτη.'
 command-reset-success: '&aΜηδένισε τα %currency% του &b%player%&a.'
+command-reset-permanent-description: "Reset only permanent points for a player"
+command-reset-permanent-success: "&aReset permanent %currency% for &b%player%&a. Total balance: &b%balance%&a."
+command-reset-temp-description: "Reset only temporary points for a player"
+command-reset-temp-success: "&aReset temporary %currency% for &b%player%&a. Total balance: &b%balance%&a."
 
 # Me Command
 command-me-description: 'Ρίξε μια ματιά στους πόντους σου!'
@@ -94,12 +118,14 @@ command-reload-reloaded: '&aΤα configuration και locale αρχεία φορ
 command-export-description: 'Εξάγει τα δεδομένα στο storage.yml'
 command-export-success: '&aΤΑ Save data έχουν εξαχθεί στο storage.yml.'
 command-export-warning: '&cΠροσοχή: Το αρχείο storage.yml υπάρχει είδη. Εάν θέλετε να το αντικαταστήσετε, χρησιμοποιήστε το &b/points export confirm&c.'
+command-export-failure: '&cΔεν ήταν δυνατή η εξαγωγή του storage.yml. Ελέγξτε την κονσόλα για λεπτομέρειες· το υπάρχον αντίγραφο ασφαλείας διατηρήθηκε.'
 
 # Import Command
 command-import-description: 'Εισαγάγει δεδομένα από το storage.yml'
 command-import-success: '&aΤα Save data έχουν εισαχθεί από το  storage.yml.'
 command-import-no-backup: '&cΑδυναμία εισαγωγής, το αρχείο storage.yml δεν υπάρχει. Μπορείτε να δημιουργήσετε ένα με την χρήση της &b/points export &cand use it to transfer data between database types.'
 command-import-warning: '&cΠροσοχή: Αυτή η ενέργεια θα διαγράψει ολα τα δεδομέμα απο την ενεργή βάση δεδομένων και θα τα αντικαταστήσει με το περιεχόμενο του αρχείου storage.yml. &cΗ τρέχουσα ενεργή βάση δεδομένων είναι &b&o&l%type%&c. &cΕάν είστε απολύτως σίγουροι για αυτό, χρησιμοποιήστε την &b/points import confirm&c.'
+command-import-failure: '&cΔεν ήταν δυνατή η εισαγωγή του storage.yml. Ελέγξτε την κονσόλα για λεπτομέρειες· τα υπάρχοντα δεδομένα διατηρήθηκαν.'
 
 # Convert Command
 command-convert-description: 'Φορτώνει τα δεδομένα νομίσματος από άλλο plugin'
@@ -114,10 +140,12 @@ command-convert-warning-currency: '&cΠροσοχλη: Αυτή η ενέργε�
 # Account Command
 command-account-description: 'Διαχειρίζεται τη δημιουργία και τη διαγραφή λογαριασμών'
 command-account-create-success: '&aΔημιουργήθηκε επιτυχώς λογαριασμός: &b%account%'
+command-account-create-failure: '&cUnable to create account &b%account%&c. No changes were saved.'
 command-account-create-exists: '&cΑπέτυχε η δημιουργία λογαριασμού. Ένας λογαριασμός με όνομα &b%account% &cυπάρχει ήδη.'
 command-account-delete-success: '&aΔιαγράφηκε επιτυχώς ο λογαριασμός.'
 command-account-delete-does-not-exist: '&cΑπέτυχε η διαγραφή λογαριασμού. Ένας λογαριασμός με όνομα &b%account% &cδεν υπάρχει.'
 command-account-delete-warning: '&cΑνακοίνωση: Αυτή η λειτουργία θα διαγράψει όλα τα δεδομένα λογαριασμού για το λογαριασμό &b%account%&c. Αν είστε απολύτως σίγουροι γι'' αυτό, χρησιμοποιήστε &b/points account delete %account% confirm&c.'
+command-account-delete-failure: '&cΔεν ήταν δυνατή η διαγραφή του λογαριασμού &b%account%&c. Τα υπάρχοντα δεδομένα διατηρήθηκαν.'
 
 # Import Legacy Command
 command-importlegacy-description: 'Εισαγάγεται εναν legacy πίνακα.'

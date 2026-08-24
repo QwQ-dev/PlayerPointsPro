@@ -16,13 +16,22 @@ permissions:
   playerpoints.*:
     description: Gives access to all PlayerPoints commands
     children:
+      playerpoints.basecommand: true
+      playerpoints.account: true
       playerpoints.give: true
+      playerpoints.give-temp: true
       playerpoints.giveall: true
       playerpoints.take: true
+      playerpoints.take-permanent: true
+      playerpoints.take-temp: true
       playerpoints.look: true
       playerpoints.pay: true
       playerpoints.set: true
+      playerpoints.set-permanent: true
+      playerpoints.set-temp: true
       playerpoints.reset: true
+      playerpoints.reset-permanent: true
+      playerpoints.reset-temp: true
       playerpoints.me: true
       playerpoints.lead: true
       playerpoints.reload: true
@@ -35,14 +44,26 @@ permissions:
   playerpoints.basecommand:
     description: Gives access to the base command
     default: true
+  playerpoints.account:
+    description: Gives access to account management commands
+    default: op
   playerpoints.give:
     description: Gives access to the give command
+    default: op
+  playerpoints.give-temp:
+    description: Gives access to the temporary give command
     default: op
   playerpoints.giveall:
     description: Gives access to the giveall command
     default: op
   playerpoints.take:
     description: Gives access to the take command
+    default: op
+  playerpoints.take-permanent:
+    description: Gives access to the permanent-only take command
+    default: op
+  playerpoints.take-temp:
+    description: Gives access to the temporary-only take command
     default: op
   playerpoints.look:
     description: Gives access to the look command
@@ -53,8 +74,20 @@ permissions:
   playerpoints.set:
     description: Gives access to the set command
     default: op
+  playerpoints.set-permanent:
+    description: Gives access to the permanent-only set command
+    default: op
+  playerpoints.set-temp:
+    description: Gives access to the temporary-only set command
+    default: op
   playerpoints.reset:
     description: Gives access to the reset command
+    default: op
+  playerpoints.reset-permanent:
+    description: Gives access to the permanent-only reset command
+    default: op
+  playerpoints.reset-temp:
+    description: Gives access to the temporary-only reset command
     default: op
   playerpoints.me:
     description: Gives access to the me command

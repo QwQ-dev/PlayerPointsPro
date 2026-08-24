@@ -11,6 +11,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
+import java.util.UUID;
+import java.util.logging.Level;
+
 public class VotifierListener implements Listener {
 
     private final PlayerPoints plugin;
@@ -33,11 +36,34 @@ public class VotifierListener implements Listener {
             Player player = Bukkit.getPlayer(playerInfo.getFirst());
 
             if (!SettingKey.VOTE_ONLINE.get() || player != null) {
-                this.plugin.getAPI().give(playerInfo.getFirst(), amount);
-                if (player != null)
-                    this.plugin.getManager(LocaleManager.class).sendMessage(player, "votifier-voted", StringPlaceholders.builder("service", event.getVote().getServiceName())
-                            .add("amount", SettingKey.VOTE_AMOUNT.get())
-                            .build());
+                UUID playerId = playerInfo.getFirst();
+                String serviceName = event.getVote().getServiceName();
+                this.plugin.getScheduler().runTaskAsync(() -> {
+                    boolean granted;
+                    try {
+                        granted = this.plugin.getAPI().give(playerId, amount);
+                    } catch (RuntimeException failure) {
+                        this.plugin.getLogger().log(Level.WARNING,
+                                "Unable to grant vote points to " + playerId, failure);
+                        return;
+                    }
+                    if (!granted) {
+                        this.plugin.getLogger().warning(
+                                "Unable to grant vote points to " + playerId);
+                        return;
+                    }
+
+                    this.plugin.getScheduler().runTask(() -> {
+                        Player onlinePlayer = Bukkit.getPlayer(playerId);
+                        if (onlinePlayer == null)
+                            return;
+                        this.plugin.getManager(LocaleManager.class).sendMessage(
+                                onlinePlayer, "votifier-voted",
+                                StringPlaceholders.builder("service", serviceName)
+                                        .add("amount", amount)
+                                        .build());
+                    });
+                });
             }
         });
     }

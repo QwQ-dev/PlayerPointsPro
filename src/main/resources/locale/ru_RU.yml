@@ -41,36 +41,60 @@ command-help-list-description-no-args: '&8 - &d/%cmd% %subcmd% &7- %desc%'
 command-give-description: Дать игроку очки
 command-give-success: '&b%player% &aполучил &b%amount% &a%currency%.'
 command-give-received: '&eВы получили &b%amount% &e%currency%.'
+command-points-update-failure: '&cUnable to update the points balance. No changes were saved.'
+
+# Give Temporary Command
+command-give-temp-description: 'Give a player temporary points'
+command-give-temp-success: '&b%player% &awas given &b%amount% &atemporary %currency% for &b%duration%&a. New balance: &b%balance%&a.'
+command-give-temp-received: '&eYou received &b%amount% &etemporary %currency% for &b%duration%&e. New balance: &b%balance%&e.'
+invalid-duration: '&cInvalid duration. Use values such as 30s, 15m, 12h, 7d, or 1d12h.'
 
 # Give All Command
 command-giveall-description: Даёт очки всем онлайн-игрокам
 command-giveall-success: '&aДал &b%amount% &a%currency% всем онлайн-игрокам.'
+command-giveall-partial: '&eGave &b%amount% &e%currency% to &b%success%/%total% &eonline players; the remaining updates were rejected.'
 
 # Take Command
 command-take-description: Забрать очки у игрока
 command-take-success: '&aЗабрал &b%amount% &a%currency% у &b%player%&a.'
 command-take-taken: ''
 command-take-not-enough: '&b%player% &cне имеет достаточно %currency% для этого.'
+command-take-temp-description: "Take only temporary points from a player"
+command-take-temp-success: "&aTook &b%amount% &atemporary %currency% from &b%player%&a."
+command-take-temp-not-enough: "&b%player% &cdoes not have enough temporary %currency% for that."
+command-take-permanent-description: "Take only permanent points from a player"
+command-take-permanent-success: "&aTook &b%amount% &apermanent %currency% from &b%player%&a."
+command-take-permanent-not-enough: "&b%player% &cdoes not have enough permanent %currency% for that."
 
 # Look Command
 command-look-description: Посмотреть очки игрока
 command-look-success: '&b%player% &eимеет &b%amount% &e%currency%.'
+command-balance-breakdown: "&ePermanent: &b%permanent% &8| &eTemporary: &b%temporary%"
+command-temporary-grant-entry: "&7  - &b%amount% %currency% &7expires at &b%expiration%"
 
 # Pay Command
 command-pay-description: Заплатить игроку
 command-pay-self: '&cВы не можете заплатить самому себе!'
 command-pay-sent: '&aВы заплатили &b%player% %amount% &a%currency%.'
 command-pay-received: '&eВам заплатили &b%amount% &e%currency% от &b%player%&e.'
-command-pay-lacking-funds: '&cУ вас недостаточно %currency% для этого.'
+command-pay-lacking-funds: '&cYou do not have enough permanent %currency% to transfer.'
 command-pay-minimum-amount: '&cМинимальная сумма для оплаты составляет &b%amount%&c %currency%.'
 
 # Set Command
 command-set-description: Установить очки игрока
 command-set-success: '&aУстановил %currency% для &b%player% &в значение &b%amount%&a.'
+command-set-permanent-description: "Set only permanent points for a player"
+command-set-permanent-success: "&aSet permanent %currency% for &b%player% &ato &b%amount%&a. Total balance: &b%balance%&a."
+command-set-temp-description: "Replace temporary points for a player"
+command-set-temp-success: "&aSet temporary %currency% for &b%player% &ato &b%amount% &afor &b%duration%&a. Total balance: &b%balance%&a."
 
 # Reset Command
 command-reset-description: Сбросить очки игрока
 command-reset-success: '&aСброшены %currency% для &b%player%&a.'
+command-reset-permanent-description: "Reset only permanent points for a player"
+command-reset-permanent-success: "&aReset permanent %currency% for &b%player%&a. Total balance: &b%balance%&a."
+command-reset-temp-description: "Reset only temporary points for a player"
+command-reset-temp-success: "&aReset temporary %currency% for &b%player%&a. Total balance: &b%balance%&a."
 
 # Me Command
 command-me-description: Посмотреть свои очки
@@ -94,12 +118,14 @@ command-reload-reloaded: '&aФайлы конфигурации и локали�
 command-export-description: Экспортирует данные в storage.yml
 command-export-success: '&aДанные сохранений экспортированы в storage.yml.'
 command-export-warning: '&cВнимание: Файл storage.yml уже существует. Если вы хотите его перезаписать, используйте &b/points export confirm&c.'
+command-export-failure: '&cНе удалось экспортировать storage.yml. Подробности смотрите в консоли; существующая резервная копия сохранена.'
 
 # Import Command
 command-import-description: Импортирует данные из storage.yml
 command-import-success: '&aДанные сохранений импортированы из storage.yml.'
 command-import-no-backup: '&cИмпорт невозможен, файл storage.yml не существует. Вы можете создать его с помощью &b/points export &cи использовать для переноса данных между типами баз данных.'
 command-import-warning: '&cВнимание: Эта операция удалит все данные из активной базы данных и заменит их содержимым файла storage.yml. &cТекущий активный тип базы данных — &b&o&l%type%&c. &cЕсли вы абсолютно уверены, используйте &b/points import confirm&c.'
+command-import-failure: '&cНе удалось импортировать storage.yml. Подробности смотрите в консоли; существующие данные сохранены.'
 
 # Convert Command
 command-convert-description: Загружает валютные данные из другого плагина
@@ -114,11 +140,13 @@ command-convert-warning-currency: '&cВнимание: Эта операция �
 # Account Command
 command-account-description: Создать или удалить аккаунт
 command-account-create-success: '&aАккаунт успешно создан: &b%account%'
+command-account-create-failure: '&cUnable to create account &b%account%&c. No changes were saved.'
 command-account-create-exists: '&cНе удалось создать аккаунт. Аккаунт с именем &b%account% &cуже существует.'
 command-account-create-name-invalid: '&cНе удалось создать аккаунт. Имена аккаунтов должны содержать от 3 до 16 символов и могут включать только буквы, цифры и подчеркивания.'
 command-account-delete-success: '&aАккаунт &b%account% &aуспешно удалён.'
 command-account-delete-does-not-exist: '&cНе удалось удалить аккаунт. Аккаунта с именем &b%account% &cне существует.'
 command-account-delete-warning: '&cВнимание: Эта операция удалит все данные аккаунта &b%account%&c. Если вы абсолютно уверены, используйте &b/points account delete %account% confirm&c.'
+command-account-delete-failure: '&cНе удалось удалить аккаунт &b%account%&c. Существующие данные сохранены.'
 
 # Import Legacy Command
 command-importlegacy-description: Импортировать устаревшую таблицу

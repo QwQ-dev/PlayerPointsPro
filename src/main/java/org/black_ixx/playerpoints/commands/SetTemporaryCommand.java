@@ -68,7 +68,16 @@ public class SetTemporaryCommand extends BasePointsCommand {
                     return;
 
                 String balance = updated ? this.lookFormattedOrUnknown(targetId) : "?";
-                int temporary = updated ? this.api.lookTemporary(targetId) : amount;
+                int temporary = amount;
+                if (updated) {
+                    try {
+                        temporary = this.api.lookTemporary(targetId);
+                    } catch (RuntimeException failure) {
+                        this.rosePlugin.getLogger().log(Level.WARNING,
+                                "Failed to read temporary PlayerPoints for " + targetId, failure);
+                    }
+                }
+                int displayedTemporary = temporary;
                 this.rosePlugin.getScheduler().runTask(() -> {
                     if (!updated) {
                         this.localeManager.sendCommandMessage(
@@ -78,9 +87,9 @@ public class SetTemporaryCommand extends BasePointsCommand {
                     this.localeManager.sendCommandMessage(sender,
                             "command-set-temp-success",
                             StringPlaceholders.builder("player", targetName)
-                                    .add("amount", PointsUtils.formatPoints(temporary))
+                                    .add("amount", PointsUtils.formatPoints(displayedTemporary))
                                     .add("balance", balance)
-                                    .add("currency", this.localeManager.getCurrencyName(temporary))
+                                    .add("currency", this.localeManager.getCurrencyName(displayedTemporary))
                                     .add("duration", DurationParser.formatMillis(
                                             expiration.getAsLong() - now))
                                     .build());

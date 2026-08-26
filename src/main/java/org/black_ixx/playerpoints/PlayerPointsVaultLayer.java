@@ -193,8 +193,10 @@ public class PlayerPointsVaultLayer implements Economy {
             int balance = this.lookAfterCommitOrFallback(playerId, fallback);
             return new EconomyResponse(amount, balance, ResponseType.SUCCESS, null);
         } catch (RuntimeException failure) {
+            this.plugin.getLogger().log(Level.WARNING,
+                    "Unable to withdraw PlayerPoints for " + playerId, failure);
             return new EconomyResponse(amount, 0, ResponseType.FAILURE,
-                    "Unable to update the PlayerPoints balance: " + failure.getMessage());
+                    "Unable to update the PlayerPoints balance");
         }
     }
 
@@ -216,8 +218,10 @@ public class PlayerPointsVaultLayer implements Economy {
             int balance = this.lookAfterCommitOrFallback(playerId, fallback);
             return new EconomyResponse(amount, balance, ResponseType.SUCCESS, null);
         } catch (RuntimeException failure) {
+            this.plugin.getLogger().log(Level.WARNING,
+                    "Unable to deposit PlayerPoints for " + playerId, failure);
             return new EconomyResponse(amount, 0, ResponseType.FAILURE,
-                    "Unable to update the PlayerPoints balance: " + failure.getMessage());
+                    "Unable to update the PlayerPoints balance");
         }
     }
 
